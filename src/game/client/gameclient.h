@@ -395,6 +395,7 @@ public:
 	};
 
 	CSnapState m_Snap;
+	bool m_SpecPending;
 	int m_aLocalTuneZone[NUM_DUMMIES]; // current tunezone (0-255)
 	bool m_aReceivedTuning[NUM_DUMMIES]; // was tuning message received after zone change
 	int m_aExpectingTuningForZone[NUM_DUMMIES]; // tunezone changed, waiting for tuning for that zone

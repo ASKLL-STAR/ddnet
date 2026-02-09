@@ -67,6 +67,8 @@ void CControls::ConKeyInputState(IConsole::IResult *pResult, void *pUserData)
 {
 	CInputState *pState = (CInputState *)pUserData;
 
+	if(pState->m_pControls->GameClient()->m_SpecPending)
+		return;
 	if(pState->m_pControls->GameClient()->m_GameInfo.m_BugDDRaceInput && pState->m_pControls->GameClient()->m_Snap.m_SpecInfo.m_Active)
 		return;
 
@@ -77,6 +79,8 @@ void CControls::ConKeyInputCounter(IConsole::IResult *pResult, void *pUserData)
 {
 	CInputState *pState = (CInputState *)pUserData;
 
+	if(pState->m_pControls->GameClient()->m_SpecPending)
+		return;
 	if((pState->m_pControls->GameClient()->m_GameInfo.m_BugDDRaceInput && pState->m_pControls->GameClient()->m_Snap.m_SpecInfo.m_Active) || pState->m_pControls->GameClient()->m_Spectator.IsActive())
 		return;
 
@@ -96,6 +100,8 @@ struct CInputSet
 void CControls::ConKeyInputSet(IConsole::IResult *pResult, void *pUserData)
 {
 	CInputSet *pSet = (CInputSet *)pUserData;
+	if(pSet->m_pControls->GameClient()->m_SpecPending)
+		return;
 	if(pResult->GetInteger(0))
 	{
 		*pSet->m_apVariables[g_Config.m_ClDummy] = pSet->m_Value;
@@ -105,6 +111,8 @@ void CControls::ConKeyInputSet(IConsole::IResult *pResult, void *pUserData)
 void CControls::ConKeyInputNextPrevWeapon(IConsole::IResult *pResult, void *pUserData)
 {
 	CInputSet *pSet = (CInputSet *)pUserData;
+	if(pSet->m_pControls->GameClient()->m_SpecPending)
+		return;
 	ConKeyInputCounter(pResult, pSet);
 	pSet->m_pControls->m_aInputData[g_Config.m_ClDummy].m_WantedWeapon = 0;
 }
@@ -216,8 +224,18 @@ int CControls::SnapInput(int *pData)
 
 	m_aLastData[g_Config.m_ClDummy].m_PlayerFlags = m_aInputData[g_Config.m_ClDummy].m_PlayerFlags;
 
+	if(GameClient()->m_SpecPending)
+	{
+		if(!GameClient()->m_GameInfo.m_BugDDRaceInput)
+			ResetInput(g_Config.m_ClDummy);
+
+		mem_copy(pData, &m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
+
+		// send once a second just to be sure
+		Send = Send || time_get() > m_LastSendTime + time_freq();
+	}
 	// we freeze the input if chat or menu is activated
-	if(!(m_aInputData[g_Config.m_ClDummy].m_PlayerFlags & PLAYERFLAG_PLAYING))
+	else if(!(m_aInputData[g_Config.m_ClDummy].m_PlayerFlags & PLAYERFLAG_PLAYING))
 	{
 		if(!GameClient()->m_GameInfo.m_BugDDRaceInput)
 			ResetInput(g_Config.m_ClDummy);
@@ -383,6 +401,9 @@ void CControls::OnRender()
 bool CControls::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 {
 	if(GameClient()->m_Snap.m_pGameInfoObj && (GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
+		return false;
+
+	if(GameClient()->m_SpecPending)
 		return false;
 
 	if(CursorType == IInput::CURSOR_JOYSTICK && g_Config.m_InpControllerAbsolute && GameClient()->m_Snap.m_pGameInfoObj && !GameClient()->m_Snap.m_SpecInfo.m_Active)

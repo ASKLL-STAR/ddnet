@@ -610,6 +610,9 @@ void CSpectator::Spectate(int SpectatorId)
 	if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SpectatorId)
 		return;
 
+	if(!GameClient()->m_Snap.m_SpecInfo.m_Active)
+		GameClient()->m_SpecPending = true;
+
 	if(Client()->IsSixup())
 	{
 		protocol7::CNetMsg_Cl_SetSpectatorMode Msg;

@@ -639,6 +639,7 @@ void CGameClient::OnReset()
 	m_SuppressEvents = false;
 	m_NewTick = false;
 	m_NewPredictedTick = false;
+	m_SpecPending = false;
 
 	m_aFlagDropTick[TEAM_RED] = 0;
 	m_aFlagDropTick[TEAM_BLUE] = 0;
@@ -2091,6 +2092,9 @@ void CGameClient::OnNewSnapshot()
 				m_Snap.m_SpecInfo.m_SpectatorId = SPEC_FREEVIEW;
 		}
 	}
+
+	if(m_SpecPending && m_Snap.m_SpecInfo.m_Active)
+		m_SpecPending = false;
 
 	// clear out unneeded client data
 	for(int i = 0; i < MAX_CLIENTS; ++i)
